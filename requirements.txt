@@ -1,6 +1,16 @@
+annotated-types==0.7.0
+attrs==23.2.0
+cattrs==23.2.3
 certifi==2024.6.2
 charset-normalizer==3.3.2
 idna==3.7
+platformdirs==4.2.2
+pydantic==2.7.4
+pydantic_core==2.18.4
 requests==2.32.3
+requests-cache==1.2.0
+six==1.16.0
+typing_extensions==4.12.2
+url-normalize==1.4.3
 urllib3==2.2.1
 wheel==0.43.0

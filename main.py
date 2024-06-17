@@ -1,58 +1,67 @@
 import json
 import locale
-import requests
+import requests_cache
+
+from datetime import datetime, timedelta
+from pydantic import BaseModel, ValidationError
 
 locale.setlocale(locale.LC_ALL, "nl_NL.utf8")
+now = datetime.now()
+tonight = datetime(now.year, now.month, now.day) + timedelta(days=1)
 URL = "https://opendata.cbs.nl/ODataApi/odata/85496NED/TypedDataSet"
 
 
-def get_data(refresh=True):
-    if not refresh:
-        try:
-            with open("data.json") as f:
-                data = json.load(f)
-        except FileNotFoundError:
-            print("Bestand niet gevonden, downloaden")
-
-            # Roep deze functie aan, met `refresh=True`
-            return get_data(refresh=True)
-    else:
-        response = requests.get(URL)
-
-        # Als de HTTP-code 400 of hoger is, zal er een uitzondering worden opgeworpen
-        response.raise_for_status()
-        data = response.json()
-
-        # Sla bestand op
-        with open("data.json", "w") as f:
-            json.dump(data, f, indent=2)
-
-    return data
+class Response(BaseModel):
+    value: list
 
 
-def get_total_population():
+class Data(BaseModel):
+    jaar: str
+    totale_bevolking: int
 
-    # Open het bestand
-    with open("data.json") as f:
-        data = json.load(f)  # data is nu een Python object (dict)
 
+def get_data():
+    session = requests_cache.CachedSession(expire_after=tonight)
+    response = session.get(URL)
+
+    # Als de HTTP-code 400 of hoger is, zal er een uitzondering worden opgeworpen
+    response.raise_for_status()
+
+    # Valideer de inkomende JSON, behoud alleen de `values`
+    try:
+        validated_response = Response.model_validate_json(response.content)
+    except ValidationError as e:
+        print(e)
+        return
+
+    return validated_response
+
+
+def get_total_population(validated_response):
     # Bereid een lege lijst voor
     result = []
 
     # Loop door de rijen in de data
-    for item in data["value"]:
-        year = item["Perioden"].split("JJ")[0]  # Schoon het jaartal op
-        value = item["TotaleBevolking_1"]
+    for row in validated_response.value:
+        jaar = row["Perioden"].split("JJ00")[0]  # Schoon het jaartal op
+        totale_bevolking = row["TotaleBevolking_1"]
 
-        # Voeg het jaartal en de waarde toe aan de lijst als een tuple
-        result.append((year, value))
+        try:
+            data = Data(jaar=jaar, totale_bevolking=totale_bevolking)
+        except ValidationError:
+            print("Geen geldige data, sla rij over")
+            continue
+
+        # Voeg het jaartal en de waarde toe aan de lijst als een Data instantie
+        result.append(data)
 
     return result
 
 
 if __name__ == "__main__":
-    data = get_data(refresh=True)  # Zet op False om niet steeds te downloaden
-    total_population = get_total_population()
+    validated_response = get_data()
+    if validated_response:
+        total_population = get_total_population(validated_response=validated_response)
 
-    for year, value in total_population:
-        print(f"{year}: {value:n}")
+        for row in total_population:
+            print(f"{row.jaar}: {row.totale_bevolking:n}")
