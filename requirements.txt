@@ -1,7 +1,7 @@
 annotated-types==0.7.0
 attrs==23.2.0
 cattrs==23.2.3
-certifi==2024.6.2
+certifi>=2024.07.04
 charset-normalizer==3.3.2
 idna==3.7
 platformdirs==4.2.2
