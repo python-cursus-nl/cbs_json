@@ -1,11 +1,14 @@
-import json
 import locale
 import requests_cache
 
 from datetime import datetime, timedelta
 from pydantic import BaseModel, ValidationError
 
-locale.setlocale(locale.LC_ALL, "nl_NL.utf8")
+try:
+    locale.setlocale(locale.LC_ALL, "nl_NL")
+except locale.Error:
+    locale.setlocale(locale.LC_ALL, "")
+
 now = datetime.now()
 tonight = datetime(now.year, now.month, now.day) + timedelta(days=1)
 URL = "https://opendata.cbs.nl/ODataApi/odata/85496NED/TypedDataSet"
