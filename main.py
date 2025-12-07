@@ -1,5 +1,3 @@
-from csv import excel
-import json
 import locale
 import requests_cache
 
